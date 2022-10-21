@@ -2,14 +2,15 @@
 #include <fstream>
 #include <ctime>
 
-struct CacheEntry {
+struct Set {
     int numSet = 0;
+    int value = 0;
+    int* addr = nullptr;
     int timeAcess = 0;
-    int* value = 0;
 };
 
 struct Block {
-    CacheEntry* sets = nullptr;
+    Set* sets = nullptr;
 };
 
 int* freshMemory(int size) {
@@ -37,7 +38,7 @@ int* loadFileToMemory(int memorySize) {
 Block* createCache(int numBlocks, int numSets) {
     Block* cache = new Block[numBlocks];
     for (int i = 0; i < numBlocks; i++)
-        cache[i].sets = new CacheEntry[numSets];
+        cache[i].sets = new Set[numSets];
     return cache;
 }
 
@@ -48,9 +49,28 @@ void simulateCacheDirectMapped(int memorySize, int numBlocks, int numSets) {
     int numHits = 0;
     int numMisses = 0;
 
-    
+    for (int i = 0; i < memorySize; i++) {
+        int memoryValue = memory[i];
+        int blockIndex = memoryValue % numBlocks;
+        int setIndex = numSets - 1;
+        int* cacheValue = &cache[blockIndex].sets[setIndex].value;
+        cache[blockIndex].sets[setIndex].timeAcess = time(NULL);
 
-    
+        if (*cacheValue == memoryValue && i != 0) {
+            numHits++;
+        } else {
+            *cacheValue = memoryValue;
+            numMisses++;
+        }
+
+        // imprimir valores todos
+        for (int i = 0; i < numBlocks; i++) {
+            for (int j = 0; j < numSets; j++) {
+                std::cout << cache[i].sets[j].value << " ";
+            }
+        }
+        std::cout << std::endl; 
+    }
 
     std::cout << "Direct Mapped Cache" << std::endl;
     std::cout << "Hits: " << numHits << std::endl;
