@@ -1,40 +1,24 @@
 #include <iostream>
 #include <fstream>
-
-struct Block {
-    int nset = 0;
-};
+#include <ctime>
 
 struct CacheEntry {
-    int* value = nullptr;
+    int numSet = 0;
+    int timeAcess = 0;
+    int* value = 0;
 };
 
-void printStatus(Block* cache, int memorySize, int numBlocks, int numSets, int numHits, int numMisses){
-    std::cout << "Memory Size: " << memorySize << std::endl;
-    std::cout << "Number of Blocks: " << numBlocks << std::endl;
-    std::cout << "Number of Sets: " << numSets << std::endl;
-    std::cout << "Number of Hits: " << numHits << std::endl;
-    std::cout << "Number of Misses: " << numMisses << std::endl;
-    std::cout << "Hit Ratio: " << (float)numHits / (float)(numHits + numMisses) << std::endl;
-    std::cout << "Miss Ratio: " << (float)numMisses / (float)(numHits + numMisses) << std::endl;
-    std::cout << "Cache: " << std::endl;
-    for (int i = 0; i < numBlocks; i++) {
-        std::cout << cache[i].nset << " ";
-    }
-    std::cout << std::endl;
-}
+struct Block {
+    CacheEntry* sets = nullptr;
+};
 
-bool powerOfTwo(int x){
-	return x * (!(x & (x - 1)));
-}
-
-int* freshMemory(int size){
+int* freshMemory(int size) {
 	int* array = new int[size];
-	for(int i = 0; i < size; i++) array[i] = 0;
+	for (int i = 0; i < size; i++) array[i] = 0;
 	return array;
 }
 
-int* loadFileToMemory(int memorySize){
+int* loadFileToMemory(int memorySize) {
     int* memory = freshMemory(memorySize);
 	FILE* file = fopen("memory.txt", "r");
 
@@ -52,7 +36,8 @@ int* loadFileToMemory(int memorySize){
 
 Block* createCache(int numBlocks, int numSets) {
     Block* cache = new Block[numBlocks];
-
+    for (int i = 0; i < numBlocks; i++)
+        cache[i].sets = new CacheEntry[numSets];
     return cache;
 }
 
@@ -63,14 +48,22 @@ void simulateCacheDirectMapped(int memorySize, int numBlocks, int numSets) {
     int numHits = 0;
     int numMisses = 0;
 
-    printStatus(cache, memorySize, numBlocks, numSets, numHits, numMisses);
     
+
+    
+
+    std::cout << "Direct Mapped Cache" << std::endl;
+    std::cout << "Hits: " << numHits << std::endl;
+    std::cout << "Misses: " << numMisses << std::endl;
+
+    for (int i = 0; i < numBlocks; i++)
+        delete[] cache[i].sets;
     delete[] cache;
     delete[] memory;
 }
 
 int main() {
-     simulateCacheDirectMapped(5, 4, 1);
-                                                                                                                                                                                                                                                                                                                             
+    simulateCacheDirectMapped(5, 4, 1);    
+
     return 0;
 }
