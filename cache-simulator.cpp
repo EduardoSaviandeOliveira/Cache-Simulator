@@ -13,6 +13,13 @@ struct Block {
     Set* sets = nullptr;
 };
 
+void printCache(Block* cache, int numSets, int numBlocks) {
+    for (int i = 0; i < numBlocks; i++) 
+        for (int j = 0; j < numSets; j++) 
+            std::cout << cache[i].sets[j].value << " ";
+    std::cout << std::endl;
+}
+
 int* freshMemory(int size) {
 	int* array = new int[size];
 	for (int i = 0; i < size; i++) array[i] = 0;
@@ -49,11 +56,16 @@ void simulateCacheDirectMapped(int memorySize, int numBlocks, int numSets) {
     int numHits = 0;
     int numMisses = 0;
 
+    for (int i = 0; i < numBlocks; i++) 
+        std::cout << i << " ";
+    std::cout << std::endl << std::endl;
+    
     for (int i = 0; i < memorySize; i++) {
         int memoryValue = memory[i];
         int blockIndex = memoryValue % numBlocks;
         int setIndex = numSets - 1;
         int* cacheValue = &cache[blockIndex].sets[setIndex].value;
+
         cache[blockIndex].sets[setIndex].timeAcess = time(NULL);
 
         if (*cacheValue == memoryValue && i != 0) {
@@ -63,15 +75,10 @@ void simulateCacheDirectMapped(int memorySize, int numBlocks, int numSets) {
             numMisses++;
         }
 
-        // imprimir valores todos
-        for (int i = 0; i < numBlocks; i++) {
-            for (int j = 0; j < numSets; j++) {
-                std::cout << cache[i].sets[j].value << " ";
-            }
-        }
-        std::cout << std::endl; 
+        printCache(cache, numSets, numBlocks);
     }
 
+    std::cout << std::endl;
     std::cout << "Direct Mapped Cache" << std::endl;
     std::cout << "Hits: " << numHits << std::endl;
     std::cout << "Misses: " << numMisses << std::endl;
@@ -82,8 +89,49 @@ void simulateCacheDirectMapped(int memorySize, int numBlocks, int numSets) {
     delete[] memory;
 }
 
+void simulateCacheFullyAssociative(int memorySize, int numBlocks, int numSets) {
+    int* memory = loadFileToMemory(memorySize);
+    Block* cache = createCache(numBlocks, numSets);
+
+    int numHits = 0;
+    int numMisses = 0;
+
+    for (int i = 0; i < numBlocks; i++) 
+        std::cout << i << " ";
+    std::cout << std::endl << std::endl;
+    
+    for (int i = 0; i < memorySize; i++) {
+        int memoryValue = memory[i];
+        int blockIndex = memoryValue % numBlocks;
+        int setIndex = numSets - 1;
+        int* cacheValue = &cache[blockIndex].sets[setIndex].value;
+
+        cache[blockIndex].sets[setIndex].timeAcess = time(NULL);
+
+        if (*cacheValue == memoryValue && i != 0) {
+            numHits++;
+        } else {
+            *cacheValue = memoryValue;
+            numMisses++;
+        }
+
+        printCache(cache, numSets, numBlocks);
+    }
+
+    std::cout << std::endl;
+    std::cout << "Direct Mapped Cache" << std::endl;
+    std::cout << "Hits: " << numHits << std::endl;
+    std::cout << "Misses: " << numMisses << std::endl;
+
+    for (int i = 0; i < numBlocks; i++)
+        delete[] cache[i].sets;
+    delete[] cache;
+    delete[] memory;
+
+}
+
 int main() {
-    simulateCacheDirectMapped(5, 4, 1);    
+    simulateCacheFullyAssociative(5, 1, 4);
 
     return 0;
 }

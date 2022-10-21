@@ -5,7 +5,7 @@
 
 - The cache size must be dynamically defined, that is, the user will say the number of cache blocks;
 
-- Ensuring consistency for a cache with size equal to a power of 2;
+- Ensure consistency for a cache with size equal to a power of 2;
 
 - The work should evaluate the success of the cache (percentage of hits) for all possible cache associativities;
 
