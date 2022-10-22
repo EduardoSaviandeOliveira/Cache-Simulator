@@ -105,7 +105,7 @@ bool isCacheValue (Block* cache, int blockIndex, int numSets, int memoryValue) {
     return false;
 }
 
-void simulateCacheFullyAssociative(int memorySize, int numBlocks, int numSets) {
+void simulateCacheAssociative(int memorySize, int numBlocks, int numSets) {
     int* memory = loadFileToMemory(memorySize);
     Block* cache = createCache(numBlocks, numSets);
 
@@ -127,12 +127,14 @@ void simulateCacheFullyAssociative(int memorySize, int numBlocks, int numSets) {
             std::cout << "H ";
             numHits++;
         } else {
-            cache[blockIndex].sets[numSets - 1].value = memoryValue;
-            cache[blockIndex].sets[numSets - 1].timeAcess = time(NULL);
+            cache[blockIndex].sets[0].value = memoryValue;
+            cache[blockIndex].sets[0].timeAcess = time(0);
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             std::cout << "M ";
             numMisses++;
         }
+
+        cache = sortCache(cache, numBlocks, numSets);
 
         for (int i = 0; i < numBlocks; i++) {
             for (int j = 0; j < numSets; j++) {
@@ -141,58 +143,6 @@ void simulateCacheFullyAssociative(int memorySize, int numBlocks, int numSets) {
         }
 
         std::cout << "\n";
-        
-        cache = sortCache(cache, numBlocks, numSets);
-    }
-    
-    std::cout << "Fully Associative Cache" << "\n";
-    std::cout << "Hits: " << numHits << "\n";
-    std::cout << "Misses: " << numMisses << "\n";;
-
-    for (int i = 0; i < numBlocks; i++)
-        delete[] cache[i].sets;
-    delete[] cache;
-    delete[] memory;
-}
-
-void simulateCacheNWay (int memorySize, int numBlocks, int numSets) {
-    int* memory = loadFileToMemory(memorySize);
-    Block* cache = createCache(numBlocks, numSets);
-
-    for (int i = 0; i < numBlocks; i++) 
-        for (int j = 0; j < numSets; j++) {
-            cache[i].sets[j].timeAcess = time(0);
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        }
-
-    int numHits = 0;
-    int numMisses = 0;
-
-    for (int i = 0; i < memorySize; i++) {
-        int memoryValue = memory[i];
-        int blockIndex = memoryValue % numBlocks;
-        std::cout << memoryValue     << " ";
-        
-        if (isCacheValue(cache, blockIndex, numSets, memoryValue) && i != 0) {
-            std::cout << "H ";
-            numHits++;
-        } else {
-            cache[blockIndex].sets[numSets - 1].value = memoryValue;
-            cache[blockIndex].sets[numSets - 1].timeAcess = time(NULL);
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-            std::cout << "M ";
-            numMisses++;
-        }
-
-        for (int i = 0; i < numBlocks; i++) {
-            for (int j = 0; j < numSets; j++) {
-                std::cout << cache[i].sets[j].value << " ";
-            }
-        }
-
-        std::cout << "\n";
-        
-        cache = sortCache(cache, numBlocks, numSets);
     }
     
     std::cout << "Fully Associative Cache" << "\n";
@@ -206,7 +156,7 @@ void simulateCacheNWay (int memorySize, int numBlocks, int numSets) {
 }
 
 int main() {
-    simulateCacheFullyAssociative(13, 1, 4);
+    simulateCacheAssociative(6, 2, 2);
 
     return 0;
 }
