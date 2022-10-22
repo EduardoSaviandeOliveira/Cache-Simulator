@@ -78,20 +78,38 @@ bool isCacheValue (Block* cache, int blockIndex, int numSets, int memoryValue, i
     return false;   
 }
 
+void printCache(Block* cache, int numBlocks, int numSets, int memorySize, int numHits) {
+    std::cout << "Cache ";
+    
+    if (numBlocks == 1)
+        std::cout << "direct mapping" << std::endl;
+    else if (numSets == 1)
+        std::cout << "fully associative" << std::endl;
+    else
+        std::cout << "set associative" << std::endl;
+        
+    std::cout << "\nBlocos\t\tSets" << "\n";
+
+    for (int i = 0; i < numBlocks; i++) {
+        std::cout << i << "\t\t";
+        for (int j = 0; j < numSets; j++) {
+            std::cout << cache[i].sets[j].value << "    ";
+        }
+        std::cout << "\n";
+    }
+
+    std::cout << "\nMemory size:" << memorySize << "\n";
+    std::cout << "Hits: " << numHits << "\n";
+    std::cout << "Misses: " << memorySize -  numHits << "\n"; // num of misses
+    std::cout << "Hit Rate: " << (double)numHits / (memorySize) * 100 << "%\n";
+}
+
 void simulateCache(int numBlocks, int numSets) {
     int memorySize = countFile();
     int* memory = loadFileToMemory(memorySize);
     Block* cache = createCache(numBlocks, numSets);
-
-    if (numBlocks == 1)
-        std::cout << "Direct mapping" << std::endl;
-    else if (numSets == 1)
-        std::cout << "Fully associative" << std::endl;
-    else
-        std::cout << "Set associative" << std::endl;
     
     int numHits = 0;
-    int numMisses = 0;
     int setNumber = 0;
 
     for (int i = 0; i < memorySize; i++) {
@@ -99,33 +117,19 @@ void simulateCache(int numBlocks, int numSets) {
         int blockIndex = memoryValue % numBlocks;
         int* cacheValue = &cache[blockIndex].sets[0].value;
 
-        std::cout << memoryValue << " ";
-
         if (isCacheValue(cache, blockIndex, numSets, memoryValue, setNumber)  && i != 0) {
             numHits++;
-            std::cout << "H ";
         } else {
             cache[blockIndex].sets[0].value = memoryValue;
             cache[blockIndex].sets[0].addr = &memory[i];
             cache[blockIndex].sets[0].timeAcess = setNumber;
-            numMisses++;
-            std::cout << "M ";
         }
 
         cache = sortCache(cache, numBlocks, numSets);
-
-        for (int i = 0; i < numBlocks; i++) {
-            for (int j = 0; j < numSets; j++) {
-                std::cout << cache[i].sets[j].value << " ";
-            }
-        }
-
-        std::cout << "\n";
         setNumber++;
     }
 
-    std::cout << "Hits: " << numHits << "\n";
-    std::cout << "Misses: " << numMisses << "\n";;
+    printCache(cache, numBlocks, numSets, memorySize, numHits);
 
     for (int i = 0; i < numBlocks; i++)
         delete[] cache[i].sets;
