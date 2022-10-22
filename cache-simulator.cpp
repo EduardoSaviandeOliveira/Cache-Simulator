@@ -1,8 +1,9 @@
 #include <iostream>
 #include <fstream>
+#include <ctime>
 #include <chrono>
 #include <thread>
-#include <ctime>
+#include <tuple>
 
 struct Set {
     int value = 0;
@@ -11,9 +12,12 @@ struct Set {
 };
 
 struct Block {
-    int numSet = 0;
     Set* sets = nullptr;
 };
+
+bool powerOfTwo(int x){
+    return x * (!(x & (x - 1)));
+}
 
 int* freshMemory(int size) {
 	int* array = new int[size];
@@ -23,7 +27,7 @@ int* freshMemory(int size) {
 
 int* loadFileToMemory(int memorySize) {
     int* memory = freshMemory(memorySize);
-	FILE* file = fopen("memory.txt", "r");
+	FILE* file = fopen("data.txt", "r");
 
 	if (file == NULL) {
 		std::cerr << "Unable to open the file" << std::endl;
@@ -41,53 +45,24 @@ Block* createCache(int numBlocks, int numSets) {
     Block* cache = new Block[numBlocks];
     for (int i = 0; i < numBlocks; i++)
         cache[i].sets = new Set[numSets];
-    return cache;
-}
 
-void simulateCacheDirectMapped(int memorySize, int numBlocks, int numSets) {
-    int* memory = loadFileToMemory(memorySize);
-    Block* cache = createCache(numBlocks, numSets);
-
-    int numHits = 0;
-    int numMisses = 0;
-
-    for (int i = 0; i < numBlocks; i++) 
-        std::cout << i << " ";
-    std::cout << std::endl << std::endl;
-    
-    for (int i = 0; i < memorySize; i++) {
-        int memoryValue = memory[i];
-        int blockIndex = memoryValue % numBlocks;
-        int setIndex = numSets - 1;
-        int* cacheValue = &cache[blockIndex].sets[setIndex].value;
-
-        if (*cacheValue == memoryValue && i != 0) {
-            numHits++;
-        } else {
-            *cacheValue = memoryValue;
-            numMisses++;
+    for (int i = 0; i < numBlocks; i++) {
+        for (int j = 0; j < numSets; j++) {
+            cache[i].sets[j].timeAcess = time(NULL);
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
     }
-
-    std::cout << std::endl;
-    std::cout << "Direct Mapped Cache" << std::endl;
-    std::cout << "Hits: " << numHits << std::endl;
-    std::cout << "Misses: " << numMisses << std::endl;
-
-    for (int i = 0; i < numBlocks; i++)
-        delete[] cache[i].sets;
-    delete[] cache;
-    delete[] memory;
+    return cache;
 }
 
 Block* sortCache (Block* cache, int numBlocks, int numSets) {
     for (int i = 0; i < numBlocks; i++) {
         for (int j = 0; j < numSets; j++) {
             for (int k = 0; k < numSets - 1; k++) {
-                if (cache[i].sets[k].timeAcess < cache[i].sets[k + 1].timeAcess) {
-                    Set aux = cache[i].sets[k];
+                if (cache[i].sets[k].timeAcess > cache[i].sets[k + 1].timeAcess) {
+                    Set temp = cache[i].sets[k];
                     cache[i].sets[k] = cache[i].sets[k + 1];
-                    cache[i].sets[k + 1] = aux;
+                    cache[i].sets[k + 1] = temp;
                 }
             }
         }
@@ -98,40 +73,43 @@ Block* sortCache (Block* cache, int numBlocks, int numSets) {
 bool isCacheValue (Block* cache, int blockIndex, int numSets, int memoryValue) {
     for (int i = 0; i < numSets; i++) {
         if (cache[blockIndex].sets[i].value == memoryValue) {
-            cache[blockIndex].sets[i].timeAcess = time(0);
+            cache[blockIndex].sets[i].timeAcess = time(NULL);
             return true;
         }
     }
-    return false;
+    return false;   
 }
 
-void simulateCacheAssociative(int memorySize, int numBlocks, int numSets) {
+void simulateCache(int memorySize, int numBlocks, int numSets) {
     int* memory = loadFileToMemory(memorySize);
     Block* cache = createCache(numBlocks, numSets);
 
-    for (int i = 0; i < numBlocks; i++) 
-        for (int j = 0; j < numSets; j++) {
-            cache[i].sets[j].timeAcess = time(0);
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        }
-
+    if (numBlocks == 1)
+        std::cout << "Direct mapping" << std::endl;
+    else if (numSets == 1)
+        std::cout << "Fully associative" << std::endl;
+    else
+        std::cout << "Set associative" << std::endl;
+    
     int numHits = 0;
     int numMisses = 0;
 
     for (int i = 0; i < memorySize; i++) {
         int memoryValue = memory[i];
         int blockIndex = memoryValue % numBlocks;
-        std::cout << memoryValue     << " ";
-        
-        if (isCacheValue(cache, blockIndex, numSets, memoryValue) && i != 0) {
-            std::cout << "H ";
+        int* cacheValue = &cache[blockIndex].sets[0].value;
+
+        std::cout << memoryValue << " ";
+
+        if (isCacheValue(cache, blockIndex, numSets, memoryValue)  && i != 0) {
             numHits++;
+            std::cout << "H ";
         } else {
             cache[blockIndex].sets[0].value = memoryValue;
-            cache[blockIndex].sets[0].timeAcess = time(0);
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-            std::cout << "M ";
+            cache[blockIndex].sets[0].addr = &memory[i];
+            cache[blockIndex].sets[0].timeAcess = time(NULL);
             numMisses++;
+            std::cout << "M ";
         }
 
         cache = sortCache(cache, numBlocks, numSets);
@@ -143,9 +121,9 @@ void simulateCacheAssociative(int memorySize, int numBlocks, int numSets) {
         }
 
         std::cout << "\n";
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
-    
-    std::cout << "Fully Associative Cache" << "\n";
+
     std::cout << "Hits: " << numHits << "\n";
     std::cout << "Misses: " << numMisses << "\n";;
 
@@ -156,7 +134,28 @@ void simulateCacheAssociative(int memorySize, int numBlocks, int numSets) {
 }
 
 int main() {
-    simulateCacheAssociative(6, 2, 2);
+    int memorySize = 0;
+    int numBlocks = 0;
+    int numSets = 0;
+
+    while (true) {
+        std::cout << "Enter the size of memory: ";
+        std::cin >> memorySize;
+        if (memorySize > 0) break;
+    }
+    while (true) {
+        std::cout << "Enter the number of blocks: ";
+        std::cin >> numBlocks;
+        if (powerOfTwo(numBlocks)) break;
+    }
+
+    while (true) {
+        std::cout << "Enter the number of sets: ";
+        std::cin >> numSets;
+        if (powerOfTwo(numSets)) break;
+    }
+
+    simulateCache(memorySize, numBlocks, numSets);
 
     return 0;
 }
