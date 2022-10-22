@@ -1,9 +1,5 @@
 #include <iostream>
 #include <fstream>
-#include <ctime>
-#include <chrono>
-#include <thread>
-#include <tuple>
 
 struct Set {
     int value = 0;
@@ -23,6 +19,15 @@ int* freshMemory(int size) {
 	int* array = new int[size];
 	for (int i = 0; i < size; i++) array[i] = 0;
 	return array;
+}
+
+int countFile() {
+    std::ifstream file("data.txt");
+    int count = 0;
+    int temp;
+    while (file >> temp) count++;
+    file.close();
+    return count;
 }
 
 int* loadFileToMemory(int memorySize) {
@@ -45,13 +50,6 @@ Block* createCache(int numBlocks, int numSets) {
     Block* cache = new Block[numBlocks];
     for (int i = 0; i < numBlocks; i++)
         cache[i].sets = new Set[numSets];
-
-    for (int i = 0; i < numBlocks; i++) {
-        for (int j = 0; j < numSets; j++) {
-            cache[i].sets[j].timeAcess = time(NULL);
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        }
-    }
     return cache;
 }
 
@@ -70,17 +68,18 @@ Block* sortCache (Block* cache, int numBlocks, int numSets) {
     return cache;
 }
 
-bool isCacheValue (Block* cache, int blockIndex, int numSets, int memoryValue) {
+bool isCacheValue (Block* cache, int blockIndex, int numSets, int memoryValue, int setNumber) {
     for (int i = 0; i < numSets; i++) {
         if (cache[blockIndex].sets[i].value == memoryValue) {
-            cache[blockIndex].sets[i].timeAcess = time(NULL);
+            cache[blockIndex].sets[i].timeAcess = setNumber;
             return true;
         }
     }
     return false;   
 }
 
-void simulateCache(int memorySize, int numBlocks, int numSets) {
+void simulateCache(int numBlocks, int numSets) {
+    int memorySize = countFile();
     int* memory = loadFileToMemory(memorySize);
     Block* cache = createCache(numBlocks, numSets);
 
@@ -93,6 +92,7 @@ void simulateCache(int memorySize, int numBlocks, int numSets) {
     
     int numHits = 0;
     int numMisses = 0;
+    int setNumber = 0;
 
     for (int i = 0; i < memorySize; i++) {
         int memoryValue = memory[i];
@@ -101,13 +101,13 @@ void simulateCache(int memorySize, int numBlocks, int numSets) {
 
         std::cout << memoryValue << " ";
 
-        if (isCacheValue(cache, blockIndex, numSets, memoryValue)  && i != 0) {
+        if (isCacheValue(cache, blockIndex, numSets, memoryValue, setNumber)  && i != 0) {
             numHits++;
             std::cout << "H ";
         } else {
             cache[blockIndex].sets[0].value = memoryValue;
             cache[blockIndex].sets[0].addr = &memory[i];
-            cache[blockIndex].sets[0].timeAcess = time(NULL);
+            cache[blockIndex].sets[0].timeAcess = setNumber;
             numMisses++;
             std::cout << "M ";
         }
@@ -121,7 +121,7 @@ void simulateCache(int memorySize, int numBlocks, int numSets) {
         }
 
         std::cout << "\n";
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        setNumber++;
     }
 
     std::cout << "Hits: " << numHits << "\n";
@@ -134,28 +134,22 @@ void simulateCache(int memorySize, int numBlocks, int numSets) {
 }
 
 int main() {
-    int memorySize = 0;
-    int numBlocks = 0;
-    int numSets = 0;
+    int numBlocks = 16;
+    int numSets = 2;
 
-    while (true) {
-        std::cout << "Enter the size of memory: ";
-        std::cin >> memorySize;
-        if (memorySize > 0) break;
-    }
-    while (true) {
-        std::cout << "Enter the number of blocks: ";
-        std::cin >> numBlocks;
-        if (powerOfTwo(numBlocks)) break;
-    }
+    // while (true) {
+    //     std::cout << "Enter the number of blocks: ";
+    //     std::cin >> numBlocks;
+    //     if (powerOfTwo(numBlocks)) break;
+    // }
 
-    while (true) {
-        std::cout << "Enter the number of sets: ";
-        std::cin >> numSets;
-        if (powerOfTwo(numSets)) break;
-    }
+    // while (true) {
+    //     std::cout << "Enter the number of sets: ";
+    //     std::cin >> numSets;
+    //     if (powerOfTwo(numSets)) break;
+    // }
 
-    simulateCache(memorySize, numBlocks, numSets);
+    simulateCache(numBlocks, numSets);
 
     return 0;
 }
